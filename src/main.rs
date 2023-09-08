@@ -1,42 +1,33 @@
 use std::{env, process::exit};
 
 fn main() {
-    // Get arguments
     let args: Vec<String> = env::args().collect();
 
-    // Check if enough arguments
-    if args.len() <= 2 {
-        eprintln!("Usage: smom <price_incl_vat> <vat_percentage>");
+    if args.len() != 3 {
+        eprintln!("Usage: {} <price_incl_vat> <vat_percentage>", args.get(0).unwrap_or(&"smom".to_string()));
         exit(1);
     }
 
-    // Get arguments as variables
-    let price_incl_vat = &args[1];
-    let vat_percentage = &args[2];
+    let price_incl_vat = parse_arg(&args[1], "price_incl_vat").unwrap_or_else(|e| exit_with_error(e));
+    let vat_percentage = parse_arg(&args[2], "vat_percentage").unwrap_or_else(|e| exit_with_error(e));
 
-    // Convert to float and check if error
-    let price_incl_vat: f64 = match price_incl_vat.trim().parse() {
-        Ok(num) => num,
-        Err(_) => {
-            eprintln!("Error: price_incl_vat is not a number.");
-            exit(1);
-        }
-    };
+    if vat_percentage < 0.0 || vat_percentage > 100.0 {
+        eprintln!("Error: vat_percentage should be between 0 and 100.");
+        exit(1);
+    }
 
-    // Convert to float and check if error
-    let vat_percentage: f64 = match vat_percentage.trim().parse() {
-        Ok(num) => num,
-        Err(_) => {
-            eprintln!("Error: vat_percentage is not a number.");
-            exit(1);
-        }
-    };
-
-    // Calculate
     let price_excl_vat = price_incl_vat / (1.0 + vat_percentage / 100.0);
     let vat = price_incl_vat - price_excl_vat;
 
-    // Print
     println!("\nPrice excl vat: {:.2}", price_excl_vat);
     println!("VAT: {:.2}\n", vat);
+}
+
+fn parse_arg(arg: &str, arg_name: &str) -> Result<f64, String> {
+    arg.trim().parse().map_err(|_| format!("Error: {} is not a valid number.", arg_name))
+}
+
+fn exit_with_error(error: String) -> ! {
+    eprintln!("{}", error);
+    exit(1);
 }
